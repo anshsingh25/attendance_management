@@ -87,20 +87,20 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           Icon(
             Icons.event_available,
             size: 80,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 24),
           Text(
             'No Active Sessions',
             style: AppTheme.headlineSmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'There are no active attendance sessions at the moment.',
             style: AppTheme.bodyLarge.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
             textAlign: TextAlign.center,
           ),
@@ -141,7 +141,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         Text(
                           session.description!,
                           style: AppTheme.bodyMedium.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -227,7 +227,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         Icon(
           icon,
           size: 16,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -237,7 +237,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               Text(
                 label,
                 style: AppTheme.bodySmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               Text(

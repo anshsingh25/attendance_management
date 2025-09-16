@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Sign in to your account',
                         style: AppTheme.bodyLarge.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -174,10 +174,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       return Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppTheme.errorColor.withOpacity(0.1),
+                          color: AppTheme.errorColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: AppTheme.errorColor.withOpacity(0.3),
+                            color: AppTheme.errorColor.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -211,10 +211,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Column(
@@ -241,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Student: student@demo.com / password123\nTeacher: teacher@demo.com / password123\nAdmin: admin@demo.com / password123',
                         style: AppTheme.bodySmall.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ],

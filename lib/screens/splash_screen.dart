@@ -71,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -99,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       'Smart WiFi & Location Based Attendance',
                       style: AppTheme.bodyLarge.copyWith(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -115,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       'Loading...',
                       style: AppTheme.bodyMedium.copyWith(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                       ),
                     ),
                   ],

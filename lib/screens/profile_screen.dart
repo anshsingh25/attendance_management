@@ -87,10 +87,10 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                 ),
               ),
               child: Text(
@@ -107,7 +107,7 @@ class ProfileScreen extends StatelessWidget {
               Text(
                 'ID: ${user.studentId}',
                 style: AppTheme.bodyMedium.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -178,12 +178,12 @@ class ProfileScreen extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
       ),
       title: Text(
         title,
         style: AppTheme.bodySmall.copyWith(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
         ),
       ),
       subtitle: Text(

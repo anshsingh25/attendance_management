@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/enhanced_attendance_screen.dart';
+import 'screens/demo_campus_setup_screen.dart';
+import 'services/mongodb_campus_service.dart';
+import 'utils/student_location_validator.dart';
 
 // Simple providers for demo
 class AuthProvider with ChangeNotifier {
@@ -38,6 +42,15 @@ void main() async {
   
   // Initialize SharedPreferences
   await SharedPreferences.getInstance();
+  
+  // Initialize MongoDB campus sync
+  try {
+    await MongoDBCampusService.startMongoDBSync();
+    print('MongoDB campus sync initialized successfully');
+  } catch (e) {
+    print('MongoDB campus sync initialization failed: $e');
+    print('Please ensure backend server is running on port 5000');
+  }
   
   runApp(const AttendanceApp());
 }
@@ -536,12 +549,26 @@ class StudentDashboardScreen extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: () => _checkLocation(context),
+                                onPressed: () => StudentLocationValidator.showLocationValidationDialog(context),
                                 icon: const Icon(Icons.location_on),
                                 label: const Text('Location'),
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _navigateToEnhancedAttendance(context),
+                            icon: const Icon(Icons.location_searching),
+                            label: const Text('Enhanced Attendance (Continuous Monitoring)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -593,7 +620,7 @@ class StudentDashboardScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isActive ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+        color: isActive ? Colors.green.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isActive ? Colors.green : Colors.grey,
@@ -695,6 +722,19 @@ class StudentDashboardScreen extends StatelessWidget {
     if (homeState != null) {
       homeState._currentIndex = 1; // Attendance tab index
     }
+  }
+
+  void _navigateToEnhancedAttendance(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EnhancedAttendanceScreen(
+          subject: 'Demo Subject',
+          room: 'Room 101',
+          sessionId: 'DEMO_${DateTime.now().millisecondsSinceEpoch}',
+        ),
+      ),
+    );
   }
 
   Future<void> _checkWiFiConnection(BuildContext context) async {
@@ -943,6 +983,30 @@ class TeacherDashboardScreen extends StatelessWidget {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () => _manageCampus(context),
+                                icon: const Icon(Icons.location_on),
+                                label: const Text('Campus'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.purple,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () => _checkWiFiConnection(context),
+                                icon: const Icon(Icons.wifi),
+                                label: const Text('WiFi Status'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -993,7 +1057,7 @@ class TeacherDashboardScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isActive ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+        color: isActive ? Colors.blue.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isActive ? Colors.blue : Colors.grey,
@@ -1081,22 +1145,6 @@ class TeacherDashboardScreen extends StatelessWidget {
     );
   }
 
-  void _navigateToQRScanner(BuildContext context) {
-    // Navigate to QR Scanner tab
-    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-    if (homeState != null) {
-      homeState._currentIndex = 2; // QR Scanner tab index
-    }
-  }
-
-  void _navigateToAttendance(BuildContext context) {
-    // Navigate to Attendance tab
-    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-    if (homeState != null) {
-      homeState._currentIndex = 1; // Attendance tab index
-    }
-  }
-
   void _navigateToQRGenerator(BuildContext context) {
     // Navigate to QR Generator tab
     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
@@ -1141,6 +1189,15 @@ class TeacherDashboardScreen extends StatelessWidget {
             child: const Text('OK'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _manageCampus(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const DemoCampusSetupScreen(),
       ),
     );
   }
@@ -1493,7 +1550,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                     else
                       ...filteredRecords.map((record) => 
                         _buildAttendanceRecordItem(record)
-                      ).toList(),
+                      ),
                   ],
                 ),
               ),
@@ -1538,10 +1595,10 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _getStatusColor(record.status).withOpacity(0.1),
+        color: _getStatusColor(record.status).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _getStatusColor(record.status).withOpacity(0.3),
+          color: _getStatusColor(record.status).withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -2105,7 +2162,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     else
                       ...filteredRecords.map((record) => 
                         _buildAttendanceRecordItem(record)
-                      ).toList(),
+                      ),
                   ],
                 ),
               ),
@@ -2150,10 +2207,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _getStatusColor(record.status).withOpacity(0.1),
+        color: _getStatusColor(record.status).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _getStatusColor(record.status).withOpacity(0.3),
+          color: _getStatusColor(record.status).withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -2464,7 +2521,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                     else
                       ...(_attendanceHistory.take(3).map((record) => 
                         _buildAttendanceItem(record)
-                      ).toList()),
+                      )),
                     if (_attendanceHistory.length > 3)
                       TextButton(
                         onPressed: _showAttendanceHistory,
@@ -2485,10 +2542,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _getStatusColor(record.status).withOpacity(0.1),
+        color: _getStatusColor(record.status).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: _getStatusColor(record.status).withOpacity(0.3),
+          color: _getStatusColor(record.status).withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -2634,6 +2691,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     // Simulate WiFi and location validation
     final wifiValid = await _validateWiFi();
     final locationValid = await _validateLocation();
+    final campusValid = await _validateCampusGeofence();
 
     if (!wifiValid) {
       _showErrorDialog('WiFi Validation Failed', 'You must be connected to the classroom WiFi to mark attendance.');
@@ -2642,6 +2700,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
     if (!locationValid) {
       _showErrorDialog('Location Validation Failed', 'You must be in the classroom to mark attendance.');
+      return;
+    }
+
+    if (!campusValid) {
+      _showCampusGeofenceErrorDialog();
       return;
     }
 
@@ -2656,9 +2719,23 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   }
 
   Future<bool> _validateLocation() async {
-    // Simulate location validation
-    await Future.delayed(const Duration(milliseconds: 500));
-    return true; // Mock: always valid for demo
+    try {
+      final result = await StudentLocationValidator.validateStudentLocation();
+      return result.success && result.isInsideCampus;
+    } catch (e) {
+      print('Location validation error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _validateCampusGeofence() async {
+    try {
+      final result = await StudentLocationValidator.validateStudentLocation();
+      return result.success && result.isInsideCampus;
+    } catch (e) {
+      print('Campus geofence validation error: $e');
+      return false;
+    }
   }
 
   void _markAttendance(String subject, String room, String timestamp) {
@@ -2732,7 +2809,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -2770,6 +2847,139 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           ],
         ),
         content: Text(message),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCampusGeofenceErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.location_off, color: Colors.orange),
+            const SizedBox(width: 8),
+            const Text('Outside Campus Area'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'You are not inside the campus area. To mark attendance, you must be within the designated campus boundaries.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'What you can do:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('• Move to the campus area'),
+                  const Text('• Check your location services'),
+                  const Text('• Contact your teacher if you\'re on campus'),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _checkLocation(context);
+            },
+            icon: const Icon(Icons.my_location),
+            label: const Text('Check Location'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkLocation(BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Checking location...'),
+          ],
+        ),
+      ),
+    );
+
+    // Simulate location check
+    await Future.delayed(const Duration(seconds: 2));
+    Navigator.pop(context);
+
+    // Mock location validation result
+    final currentLocation = 'Room 101, Building A';
+    final distance = '5 meters';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.location_on,
+              color: Colors.green,
+            ),
+            const SizedBox(width: 8),
+            const Text('In Classroom'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Status: Inside classroom area'),
+            const SizedBox(height: 8),
+            Text('Current Location: $currentLocation'),
+            const SizedBox(height: 8),
+            Text('Distance from center: $distance'),
+            const SizedBox(height: 8),
+            const Text('Accuracy: High'),
+          ],
+        ),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(context),

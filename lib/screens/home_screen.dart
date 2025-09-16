@@ -157,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
         gradient: LinearGradient(
           colors: [
             Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -177,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             'Welcome back,',
             style: AppTheme.bodyLarge.copyWith(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
           const SizedBox(height: 4),
@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             user.role.toUpperCase(),
             style: AppTheme.labelMedium.copyWith(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               letterSpacing: 1.2,
             ),
           ),
@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               'ID: ${user.studentId}',
               style: AppTheme.bodySmall.copyWith(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -293,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 subtitle,
                 style: AppTheme.bodySmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -320,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icon(
                     Icons.event_available,
                     size: 48,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -331,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'There are no active attendance sessions at the moment.',
                     style: AppTheme.bodyMedium.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -376,13 +376,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icon(
                             Icons.access_time,
                             size: 16,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Ends in ${attendanceProvider.formatRemainingTime(session.remainingTime)}',
                             style: AppTheme.bodySmall.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
@@ -477,10 +477,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -502,7 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             title,
             style: AppTheme.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             textAlign: TextAlign.center,
           ),

@@ -62,7 +62,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -84,7 +84,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                   Text(
                     'Make sure the code is clearly visible',
                     style: AppTheme.bodySmall.copyWith(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -103,7 +103,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 // Flashlight Toggle
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: IconButton(
@@ -138,7 +138,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           // Loading Overlay
           if (_isScanning)
             Container(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               child: const Center(
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),

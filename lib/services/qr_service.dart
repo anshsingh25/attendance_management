@@ -98,7 +98,7 @@ class QRService {
       version: QrVersions.auto,
       size: size,
       backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+        // foregroundColor: Colors.black, // Deprecated - use colors in eyeStyle and dataModuleStyle instead
     );
   }
 
