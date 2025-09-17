@@ -177,4 +177,43 @@ class AuthService {
     }
     return {};
   }
+
+  // Get persistent QR sessions for teacher
+  Future<ApiResponse<List<Map<String, dynamic>>>> getPersistentSessions() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return ApiResponse.error(message: 'Not authenticated');
+      }
+
+      final response = await _dio.get(
+        '/auth/persistent-sessions',
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final sessions = List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+        return ApiResponse.success(
+          message: response.data['message'] ?? 'Persistent sessions retrieved',
+          data: sessions,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.data['message'] ?? 'Failed to get persistent sessions',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      return ApiResponse.error(
+        message: _handleDioError(e),
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      return ApiResponse.error(
+        message: 'An unexpected error occurred: $e',
+      );
+    }
+  }
 }

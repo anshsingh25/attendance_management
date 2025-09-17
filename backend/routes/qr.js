@@ -162,11 +162,19 @@ router.post('/validate', protect, authorize('student'), [
       });
     }
 
-    // Check if session is active
+    // Check if session is active or persistent (teacher logged out but QR still valid)
     if (session.status !== 'active') {
       return res.status(400).json({
         success: false,
         message: 'Session is not active'
+      });
+    }
+
+    // Check if QR code is still active (either normal or persistent)
+    if (!session.qrCode.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'QR code is no longer active'
       });
     }
 
@@ -333,6 +341,45 @@ router.put('/end-session/:sessionId', protect, authorize('teacher'), async (req,
     res.status(500).json({
       success: false,
       message: 'Server error'
+    });
+  }
+});
+
+// @desc    Cleanup expired persistent sessions
+// @route   POST /api/qr/cleanup-expired
+// @access  Private (Admin only)
+router.post('/cleanup-expired', protect, authorize('admin'), async (req, res) => {
+  try {
+    const now = new Date();
+    
+    // Find and deactivate expired persistent sessions
+    const expiredSessions = await Session.updateMany(
+      {
+        status: 'active',
+        'qrCode.persistent': true,
+        'qrCode.expiresAt': { $lt: now }
+      },
+      {
+        $set: {
+          status: 'completed',
+          'qrCode.isActive': false,
+          endTime: now
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      message: `Cleaned up ${expiredSessions.modifiedCount} expired persistent sessions`,
+      data: {
+        modifiedCount: expiredSessions.modifiedCount
+      }
+    });
+  } catch (error) {
+    console.error('Cleanup expired sessions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during cleanup'
     });
   }
 });

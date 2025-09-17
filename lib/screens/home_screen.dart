@@ -44,6 +44,143 @@ class _HomeScreenState extends State<HomeScreen> {
         await attendanceProvider.enableWifiAutoMarkingForClass(classId);
       }
     }
+    
+    // Check for persistent QR sessions if user is a teacher
+    if (authProvider.user != null && authProvider.isTeacher) {
+      await _checkPersistentSessions();
+    }
+  }
+
+  Future<void> _checkPersistentSessions() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    try {
+      final persistentSessions = await authProvider.getPersistentSessions();
+      if (persistentSessions.isNotEmpty && mounted) {
+        _showPersistentSessionsDialog(persistentSessions);
+      }
+    } catch (e) {
+      print('Error checking persistent sessions: $e');
+    }
+  }
+
+  void _showPersistentSessionsDialog(List<Map<String, dynamic>> sessions) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.qr_code, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            const Text('Active QR Sessions'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You have ${sessions.length} active QR session(s) that persisted during your logout:',
+              style: AppTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            ...sessions.map((session) => _buildPersistentSessionItem(session)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Navigate to attendance screen to manage sessions
+              setState(() {
+                _currentIndex = 1;
+              });
+              _pageController.animateToPage(
+                1,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            child: const Text('Manage Sessions'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersistentSessionItem(Map<String, dynamic> session) {
+    final classInfo = session['class'] as Map<String, dynamic>?;
+    final qrCode = session['qrCode'] as Map<String, dynamic>?;
+    final expiresAt = qrCode?['expiresAt'] != null 
+        ? DateTime.parse(qrCode!['expiresAt']) 
+        : null;
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              classInfo?['name'] ?? 'Unknown Class',
+              style: AppTheme.titleMedium.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (classInfo?['subject'] != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                classInfo!['subject'],
+                style: AppTheme.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+            if (expiresAt != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Expires: ${_formatExpirationTime(expiresAt)}',
+                    style: AppTheme.bodySmall.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatExpirationTime(DateTime expiresAt) {
+    final now = DateTime.now();
+    final difference = expiresAt.difference(now);
+    
+    if (difference.isNegative) {
+      return 'Expired';
+    }
+    
+    final hours = difference.inHours;
+    final minutes = difference.inMinutes % 60;
+    
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else {
+      return '${minutes}m';
+    }
   }
 
   @override

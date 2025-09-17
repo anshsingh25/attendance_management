@@ -35,6 +35,18 @@ const sessionSchema = new mongoose.Schema({
     isActive: {
       type: Boolean,
       default: true
+    },
+    persistent: {
+      type: Boolean,
+      default: false
+    },
+    teacherLoggedOut: {
+      type: Boolean,
+      default: false
+    },
+    logoutTime: {
+      type: Date,
+      default: null
     }
   },
   status: {

@@ -92,12 +92,31 @@ const connectDB = async () => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
+// Cleanup expired QR codes every 5 minutes
+const cleanupExpiredQRCodes = async () => {
+  try {
+    const QRCode = require('./models/QRCode');
+    const expiredCodes = await QRCode.findExpiredCodes();
+    
+    if (expiredCodes.length > 0) {
+      await Promise.all(expiredCodes.map(code => code.deactivate()));
+      console.log(`Cleaned up ${expiredCodes.length} expired QR codes`);
+    }
+  } catch (error) {
+    console.error('Error cleaning up expired QR codes:', error);
+  }
+};
+
 const startServer = async () => {
   await connectDB();
+  
+  // Start cleanup job
+  setInterval(cleanupExpiredQRCodes, 5 * 60 * 1000); // Every 5 minutes
   
   app.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     console.log(`Health check: http://localhost:${PORT}/health`);
+    console.log('QR code cleanup job started (every 5 minutes)');
   });
 };
 

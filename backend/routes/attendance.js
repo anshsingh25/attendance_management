@@ -4,6 +4,7 @@ const { protect, authorize } = require('../middleware/auth');
 const Attendance = require('../models/Attendance');
 const Session = require('../models/Session');
 const Class = require('../models/Class');
+const QRCode = require('../models/QRCode');
 
 const router = express.Router();
 
@@ -161,6 +162,219 @@ router.get('/me', protect, authorize('student'), [
     Attendance.countDocuments(filter)
   ]);
   res.json({ success: true, data: items, meta: { total, page, limit } });
+});
+
+// Demo endpoints for testing without authentication
+
+// @desc    Generate demo attendance code
+// @route   POST /api/attendance/generate-code/demo
+// @access  Public (demo)
+router.post('/generate-code/demo', [
+  body('duration').isInt({ min: 1, max: 120 }).withMessage('Duration must be between 1 and 120 minutes'),
+  body('classId').optional().isString(),
+  body('subject').optional().isString()
+], async (req, res) => {
+  const invalid = handleValidation(req, res); if (invalid) return invalid;
+  
+  try {
+    const { duration = 60, classId = 'demo_class', subject = 'Demo Class' } = req.body;
+    
+    // Generate 6-digit alphanumeric code
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    // Calculate expiration time (this is just a placeholder, actual expiration starts when countdown begins)
+    const expiresAt = new Date(Date.now() + duration * 60 * 1000);
+    
+    // Create QR code in database
+    const qrCode = new QRCode({
+      code,
+      duration,
+      expiresAt,
+      classId,
+      subject,
+      isActive: true,
+      countdownStarted: false,
+      actualExpiresAt: null,
+      createdBy: 'demo_teacher'
+    });
+    
+    await qrCode.save();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Attendance code generated successfully',
+      data: {
+        code: qrCode.code,
+        duration: qrCode.duration,
+        expiresAt: qrCode.expiresAt,
+        classId: qrCode.classId,
+        subject: qrCode.subject,
+        isActive: qrCode.isActive,
+        createdAt: qrCode.createdAt,
+        createdBy: qrCode.createdBy
+      }
+    });
+  } catch (error) {
+    console.error('Error generating demo attendance code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during code generation'
+    });
+  }
+});
+
+// @desc    Start countdown for QR code
+// @route   POST /api/attendance/start-countdown/demo
+// @access  Public (demo)
+router.post('/start-countdown/demo', [
+  body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 characters')
+], async (req, res) => {
+  const invalid = handleValidation(req, res); if (invalid) return invalid;
+  
+  try {
+    const { code } = req.body;
+    
+    const qrCode = await QRCode.findActiveByCode(code);
+    if (!qrCode) {
+      return res.status(404).json({
+        success: false,
+        message: 'QR code not found'
+      });
+    }
+    
+    if (qrCode.countdownStarted) {
+      return res.status(400).json({
+        success: false,
+        message: 'Countdown already started for this QR code'
+      });
+    }
+    
+    // Start countdown using the model method
+    await qrCode.startCountdown();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Countdown started successfully',
+      data: {
+        code: qrCode.code,
+        expiresAt: qrCode.actualExpiresAt,
+        duration: qrCode.duration
+      }
+    });
+  } catch (error) {
+    console.error('Error starting countdown:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during countdown start'
+    });
+  }
+});
+
+// @desc    Validate demo attendance code
+// @route   POST /api/attendance/validate-code/demo
+// @access  Public (demo)
+router.post('/validate-code/demo', [
+  body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 characters'),
+  body('studentId').isString().withMessage('Student ID is required'),
+  body('location').optional().isObject(),
+  body('timestamp').optional().isISO8601()
+], async (req, res) => {
+  const invalid = handleValidation(req, res); if (invalid) return invalid;
+  
+  try {
+    const { code, studentId, location, timestamp } = req.body;
+    
+    // Check if QR code exists in database
+    const qrCode = await QRCode.findActiveByCode(code);
+    if (!qrCode) {
+      return res.status(404).json({
+        success: false,
+        message: 'QR code not found or invalid'
+      });
+    }
+    
+    // Check if countdown has started
+    if (!qrCode.countdownStarted) {
+      return res.status(400).json({
+        success: false,
+        message: 'QR code countdown has not started yet. Please wait for teacher to start the countdown.'
+      });
+    }
+    
+    // Check if QR code has expired
+    if (qrCode.isExpired()) {
+      // Deactivate expired code
+      await qrCode.deactivate();
+      return res.status(400).json({
+        success: false,
+        message: 'QR code has expired. Please ask teacher to generate a new one.'
+      });
+    }
+    
+    // Check if QR code is still active
+    if (!qrCode.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'QR code is no longer active'
+      });
+    }
+    
+    // Successful validation
+    const attendanceRecord = {
+      id: new Date().getTime().toString(),
+      code,
+      studentId,
+      location,
+      timestamp: timestamp || new Date().toISOString(),
+      status: 'present',
+      validatedAt: new Date(),
+      classId: qrCode.classId,
+      subject: qrCode.subject,
+      expiresAt: qrCode.actualExpiresAt
+    };
+    
+    res.status(200).json({
+      success: true,
+      message: 'Attendance marked successfully',
+      data: attendanceRecord
+    });
+  } catch (error) {
+    console.error('Error validating demo attendance code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during code validation'
+    });
+  }
+});
+
+// @desc    Get active attendance codes (demo)
+// @route   GET /api/attendance/codes/active
+// @access  Public (demo)
+router.get('/codes/active', async (req, res) => {
+  try {
+    // Query database for active codes
+    const activeCodes = await QRCode.find({
+      isActive: true,
+      countdownStarted: true,
+      actualExpiresAt: { $gt: new Date() }
+    }).sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      data: activeCodes,
+      message: activeCodes.length > 0 ? 'Active codes found' : 'No active codes found'
+    });
+  } catch (error) {
+    console.error('Error getting active codes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
 });
 
 module.exports = router;

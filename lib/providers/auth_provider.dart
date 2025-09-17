@@ -55,6 +55,12 @@ class AuthProvider with ChangeNotifier {
         _user = response.data!.user;
         _isLoggedIn = true;
         _error = null;
+        
+        // Check for persistent QR sessions if user is a teacher
+        if (_user?.isTeacher == true) {
+          await _checkPersistentSessions();
+        }
+        
         return true;
       } else {
         _error = response.message;
@@ -69,6 +75,27 @@ class AuthProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // Check for persistent QR sessions
+  Future<List<Map<String, dynamic>>> _checkPersistentSessions() async {
+    try {
+      final response = await _authService.getPersistentSessions();
+      if (response.success && response.data != null) {
+        return response.data!;
+      }
+    } catch (e) {
+      print('Error checking persistent sessions: $e');
+    }
+    return [];
+  }
+
+  // Get persistent sessions (public method)
+  Future<List<Map<String, dynamic>>> getPersistentSessions() async {
+    if (!_isLoggedIn || !isTeacher) {
+      return [];
+    }
+    return await _checkPersistentSessions();
   }
 
   // Logout

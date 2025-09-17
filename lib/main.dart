@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'screens/enhanced_attendance_screen.dart';
 import 'screens/demo_campus_setup_screen.dart';
+import 'screens/student_qr_scanner_screen.dart';
 import 'services/mongodb_campus_service.dart';
+import 'services/attendance_code_service.dart';
 import 'utils/student_location_validator.dart';
 
 // Simple providers for demo
@@ -310,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: const [
           StudentDashboardScreen(),
           StudentAttendanceScreen(),
-          QRScannerScreen(),
+          StudentQRScannerScreen(),
           ProfileScreen(),
         ],
       ),
@@ -1757,8 +1761,161 @@ class TeacherAttendanceScreen extends StatelessWidget {
 }
 
 // QR Generator Screen
-class QRGeneratorScreen extends StatelessWidget {
+class QRGeneratorScreen extends StatefulWidget {
   const QRGeneratorScreen({super.key});
+
+  @override
+  State<QRGeneratorScreen> createState() => _QRGeneratorScreenState();
+}
+
+class _QRGeneratorScreenState extends State<QRGeneratorScreen> {
+  final AttendanceCodeService _attendanceCodeService = AttendanceCodeService();
+  final TextEditingController _durationController = TextEditingController(text: '60');
+  final TextEditingController _subjectController = TextEditingController(text: 'Demo Class');
+  
+  String? _generatedCode;
+  QrImageView? _qrCodeImage;
+  DateTime? _expiresAt;
+  Timer? _countdownTimer;
+  int _remainingSeconds = 0;
+  bool _isGenerating = false;
+  bool _isCountdownActive = false;
+
+  @override
+  void dispose() {
+    _durationController.dispose();
+    _subjectController.dispose();
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _startCountdown() async {
+    if (_generatedCode == null) return;
+    
+    try {
+      // Call backend to start countdown
+      final result = await _attendanceCodeService.startCountdown(code: _generatedCode!);
+      
+      if (result.success) {
+        // Set expiration time when countdown actually starts
+        final duration = int.tryParse(_durationController.text) ?? 60;
+        _expiresAt = DateTime.now().add(Duration(minutes: duration));
+        
+        setState(() {
+          _isCountdownActive = true;
+          _remainingSeconds = duration * 60;
+        });
+        
+        _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          final now = DateTime.now();
+          final remaining = _expiresAt!.difference(now).inSeconds;
+          
+          if (remaining <= 0) {
+            setState(() {
+              _remainingSeconds = 0;
+              _isCountdownActive = false;
+              _generatedCode = null;
+              _qrCodeImage = null;
+              _expiresAt = null;
+            });
+            timer.cancel();
+          } else {
+            setState(() {
+              _remainingSeconds = remaining;
+            });
+          }
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Countdown started! QR code will expire in ${_formatTime(_remainingSeconds)}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start countdown: ${result.error}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error starting countdown: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _stopCountdown() {
+    _countdownTimer?.cancel();
+    setState(() {
+      _isCountdownActive = false;
+      _remainingSeconds = 0;
+    });
+  }
+
+  String _formatTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _generateQRCode() async {
+    if (_isGenerating) return;
+    
+    setState(() {
+      _isGenerating = true;
+    });
+
+    try {
+      final duration = int.tryParse(_durationController.text) ?? 60;
+      final subject = _subjectController.text.trim().isEmpty ? 'Demo Class' : _subjectController.text.trim();
+      
+      final result = await _attendanceCodeService.generateAttendanceCode(
+        durationMinutes: duration,
+        subject: subject,
+      );
+
+      if (result.success) {
+        setState(() {
+          _generatedCode = result.code;
+          _qrCodeImage = result.qrCodeImage;
+          // Don't set _expiresAt here - it will be set when countdown starts
+          _expiresAt = null;
+          _remainingSeconds = duration * 60;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('QR Code generated successfully: ${result.code}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate QR code: ${result.error}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isGenerating = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1766,33 +1923,206 @@ class QRGeneratorScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Generate QR Code'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          if (_generatedCode != null)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _isGenerating ? null : () {
+                setState(() {
+                  _generatedCode = null;
+                  _qrCodeImage = null;
+                  _expiresAt = null;
+                  _isCountdownActive = false;
+                  _remainingSeconds = 0;
+                });
+                _countdownTimer?.cancel();
+              },
+            ),
+        ],
       ),
-      body: const Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(
-              Icons.qr_code,
-              size: 80,
-              color: Colors.blue,
-            ),
-            SizedBox(height: 24),
-            Text(
-              'QR Code Generator',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+            // Configuration Section
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Class Configuration',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _subjectController,
+                      decoration: const InputDecoration(
+                        labelText: 'Subject/Class Name',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.school),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _durationController,
+                      decoration: const InputDecoration(
+                        labelText: 'Duration (minutes)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.timer),
+                        suffixText: 'min',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
               ),
             ),
-            SizedBox(height: 16),
-            Text(
-              'Generate QR codes for your classes.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
+            
+            const SizedBox(height: 24),
+            
+            // Generate QR Button
+            ElevatedButton.icon(
+              onPressed: _isGenerating || _generatedCode != null ? null : _generateQRCode,
+              icon: _isGenerating 
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.qr_code),
+              label: Text(_isGenerating ? 'Generating...' : 'Generate QR Code'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _generatedCode != null ? Colors.grey : Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              textAlign: TextAlign.center,
             ),
+            
+            if (_generatedCode != null) ...[
+              const SizedBox(height: 24),
+              
+              // QR Code Display Section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Generated QR Code',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // QR Code Image
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: _qrCodeImage ?? const CircularProgressIndicator(),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Generated Code Text
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.code, color: Colors.blue),
+                            const SizedBox(width: 8),
+                            Text(
+                              _generatedCode!,
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Countdown Timer
+                      if (_generatedCode != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _isCountdownActive ? Colors.orange.shade50 : Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _isCountdownActive ? Colors.orange.shade200 : Colors.grey.shade200,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _isCountdownActive ? Icons.timer : Icons.timer_off,
+                                color: _isCountdownActive ? Colors.orange : Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _isCountdownActive 
+                                  ? 'Expires in: ${_formatTime(_remainingSeconds)}'
+                                  : 'Countdown not started - QR code will not expire',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: _isCountdownActive ? Colors.orange.shade700 : Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      
+                      // Start Countdown Button
+                      if (!_isCountdownActive && _generatedCode != null)
+                        ElevatedButton.icon(
+                          onPressed: _startCountdown,
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('Start Countdown'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      
+                      // Stop Countdown Button
+                      if (_isCountdownActive)
+                        ElevatedButton.icon(
+                          onPressed: _stopCountdown,
+                          icon: const Icon(Icons.stop),
+                          label: const Text('Stop Countdown'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

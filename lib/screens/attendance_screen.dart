@@ -278,30 +278,287 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Widget _buildTeacherView() {
-    return const Center(
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return FutureBuilder<List<Map<String, dynamic>>>(
+          future: authProvider.getPersistentSessions(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final persistentSessions = snapshot.data ?? [];
+
+            if (persistentSessions.isEmpty) {
+              return _buildEmptyTeacherState();
+            }
+
+            return _buildPersistentSessionsView(persistentSessions);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyTeacherState() {
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.school,
+            Icons.qr_code,
             size: 80,
-            color: Colors.grey,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Text(
-            'Teacher Dashboard',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+            'No Active QR Sessions',
+            style: AppTheme.headlineSmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Teacher features coming soon...',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
+            'Generate a QR code to start an attendance session.',
+            style: AppTheme.bodyLarge.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              // Navigate to QR generator screen
+              Navigator.pushNamed(context, '/qr-generator');
+            },
+            icon: const Icon(Icons.qr_code),
+            label: const Text('Generate QR Code'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersistentSessionsView(List<Map<String, dynamic>> sessions) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.getPersistentSessions();
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: sessions.length,
+        itemBuilder: (context, index) {
+          final session = sessions[index];
+          return _buildPersistentSessionCard(session);
+        },
+      ),
+    );
+  }
+
+  Widget _buildPersistentSessionCard(Map<String, dynamic> session) {
+    final classInfo = session['class'] as Map<String, dynamic>?;
+    final qrCode = session['qrCode'] as Map<String, dynamic>?;
+    final expiresAt = qrCode?['expiresAt'] != null 
+        ? DateTime.parse(qrCode!['expiresAt']) 
+        : null;
+    final isActive = qrCode?['isActive'] == true;
+    final isPersistent = qrCode?['persistent'] == true;
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        classInfo?['name'] ?? 'Unknown Class',
+                        style: AppTheme.titleLarge,
+                      ),
+                      if (classInfo?['subject'] != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          classInfo!['subject'],
+                          style: AppTheme.bodyMedium.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isActive 
+                        ? (isPersistent ? AppTheme.warningColor : AppTheme.successColor)
+                        : AppTheme.errorColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    isActive 
+                        ? (isPersistent ? 'PERSISTENT' : 'ACTIVE')
+                        : 'INACTIVE',
+                    style: AppTheme.labelSmall.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Session Details
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDetailItem(
+                    icon: Icons.access_time,
+                    label: 'Expires',
+                    value: expiresAt != null ? _formatExpirationTime(expiresAt) : 'Unknown',
+                  ),
+                ),
+                Expanded(
+                  child: _buildDetailItem(
+                    icon: Icons.qr_code,
+                    label: 'Status',
+                    value: isPersistent ? 'Persistent' : 'Normal',
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: isActive ? () => _viewQRCode(session) : null,
+                    icon: const Icon(Icons.visibility),
+                    label: const Text('View QR'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: isActive ? () => _endSession(session) : null,
+                    icon: const Icon(Icons.stop),
+                    label: const Text('End Session'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.errorColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatExpirationTime(DateTime expiresAt) {
+    final now = DateTime.now();
+    final difference = expiresAt.difference(now);
+    
+    if (difference.isNegative) {
+      return 'Expired';
+    }
+    
+    final hours = difference.inHours;
+    final minutes = difference.inMinutes % 60;
+    
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else {
+      return '${minutes}m';
+    }
+  }
+
+  void _viewQRCode(Map<String, dynamic> session) {
+    // Show QR code in a dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('QR Code - ${session['class']?['name'] ?? 'Unknown Class'}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: const Text(
+                'QR Code Image Here',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Students can scan this QR code to mark attendance.',
+              style: AppTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _endSession(Map<String, dynamic> session) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('End Session'),
+        content: Text(
+          'Are you sure you want to end the attendance session for ${session['class']?['name'] ?? 'this class'}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // TODO: Implement end session functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Session ended successfully'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('End Session'),
           ),
         ],
       ),

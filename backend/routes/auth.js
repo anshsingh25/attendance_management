@@ -188,19 +188,49 @@ router.post('/login', [
 // @desc    Logout user
 // @route   POST /api/auth/logout
 // @access  Private
-router.post('/logout', protect, (req, res) => {
-  res.cookie('token', '', {
-    expires: new Date(0),
-    httpOnly: true
-  });
+router.post('/logout', protect, async (req, res) => {
+  try {
+    // If user is a teacher, preserve active QR sessions
+    if (req.user.role === 'teacher') {
+      const Session = require('../models/Session');
+      
+      // Mark active sessions as persistent (teacher logged out but QR should remain valid)
+      await Session.updateMany(
+        {
+          teacher: req.user._id,
+          status: 'active',
+          'qrCode.isActive': true,
+          'qrCode.expiresAt': { $gt: new Date() }
+        },
+        {
+          $set: {
+            'qrCode.persistent': true,
+            'qrCode.teacherLoggedOut': true,
+            'qrCode.logoutTime': new Date()
+          }
+        }
+      );
+    }
 
-  // Invalidate refresh tokens by bumping version
-  User.findByIdAndUpdate(req.user._id, { $inc: { refreshTokenVersion: 1 } }).catch(() => {});
+    res.cookie('token', '', {
+      expires: new Date(0),
+      httpOnly: true
+    });
 
-  res.json({
-    success: true,
-    message: 'Logged out successfully'
-  });
+    // Invalidate refresh tokens by bumping version
+    User.findByIdAndUpdate(req.user._id, { $inc: { refreshTokenVersion: 1 } }).catch(() => {});
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during logout'
+    });
+  }
 });
 
 // @desc    Get current user
@@ -218,6 +248,65 @@ router.get('/me', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Get user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @desc    Get persistent QR sessions for teacher
+// @route   GET /api/auth/persistent-sessions
+// @access  Private (Teacher only)
+router.get('/persistent-sessions', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'teacher') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Teachers only.'
+      });
+    }
+
+    const Session = require('../models/Session');
+    
+    // Find persistent sessions that are still valid
+    const persistentSessions = await Session.find({
+      teacher: req.user._id,
+      status: 'active',
+      'qrCode.persistent': true,
+      'qrCode.isActive': true,
+      'qrCode.expiresAt': { $gt: new Date() }
+    })
+    .populate('class', 'name code subject')
+    .sort({ 'qrCode.logoutTime': -1 });
+
+    // Reset persistent flags since teacher is back online
+    if (persistentSessions.length > 0) {
+      await Session.updateMany(
+        {
+          teacher: req.user._id,
+          'qrCode.persistent': true,
+          'qrCode.teacherLoggedOut': true
+        },
+        {
+          $unset: {
+            'qrCode.persistent': '',
+            'qrCode.teacherLoggedOut': '',
+            'qrCode.logoutTime': ''
+          }
+        }
+      );
+    }
+
+    res.json({
+      success: true,
+      data: persistentSessions,
+      message: persistentSessions.length > 0 
+        ? `Found ${persistentSessions.length} active QR session(s) that persisted during logout`
+        : 'No persistent sessions found'
+    });
+  } catch (error) {
+    console.error('Get persistent sessions error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
