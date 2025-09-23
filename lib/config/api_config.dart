@@ -1,6 +1,6 @@
 class ApiConfig {
   // Update this URL to point to your backend API
-  static const String baseUrl = 'http://localhost:5001/api';
+  static const String baseUrl = 'http://localhost:5000/api';
   
   // Demo endpoints for testing (replace with actual backend)
   static const String loginEndpoint = '/auth/login';

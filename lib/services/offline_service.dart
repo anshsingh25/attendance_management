@@ -255,7 +255,7 @@ class OfflineService {
   // Process attendance submission
   Future<bool> _processAttendanceSubmission(Map<String, dynamic> data) async {
     try {
-      final dio = Dio(BaseOptions(baseUrl: 'http://localhost:5001/api'));
+      final dio = Dio(BaseOptions(baseUrl: 'http://localhost:5000/api'));
       final payload = <String, dynamic>{
         'qrData': data['qrCodeData'] ?? data['qrData'],
         'location': data['latitude'] != null && data['longitude'] != null

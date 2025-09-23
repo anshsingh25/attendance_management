@@ -49,5 +49,35 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	
+	<!-- Camera Permission for QR Code Scanning -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to scan QR codes for attendance marking.</string>
+	
+	<!-- Location Permission for Geofencing -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs location access to verify attendance within campus boundaries and provide geofencing functionality.</string>
+	
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs location access to verify attendance within campus boundaries and provide geofencing functionality.</string>
+	
+	<!-- WiFi Permission -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app needs network access to validate WiFi connection for attendance marking.</string>
+	
+	<!-- Network Security -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>

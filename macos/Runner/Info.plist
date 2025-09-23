@@ -34,6 +34,15 @@
 	<string>This app needs location access to verify attendance within campus boundaries and provide geofencing functionality.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs location access to verify attendance within campus boundaries and provide geofencing functionality.</string>
+	
+	<!-- Camera Permission for QR Code Generation -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to generate QR codes for attendance sessions.</string>
+	
+	<!-- WiFi Permission -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app needs network access to validate WiFi connection for attendance marking.</string>
+	
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
