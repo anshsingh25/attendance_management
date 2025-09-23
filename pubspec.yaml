@@ -57,6 +57,9 @@ dependencies:
   qr_flutter: ^4.1.0
   qr_code_scanner: ^1.0.1
   
+  # Charts and Analytics
+  fl_chart: ^0.68.0
+  
   # Local Storage
   sqflite: ^2.3.3+1
   path: ^1.9.0

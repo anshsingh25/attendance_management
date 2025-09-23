@@ -6,6 +6,7 @@ import '../utils/app_theme.dart';
 import 'attendance_screen.dart';
 import 'qr_scanner_screen.dart';
 import 'profile_screen.dart';
+import 'analytics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -203,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildHomePage(authProvider.user!),
               const AttendanceScreen(),
               const QRScannerScreen(),
+              const AnalyticsScreen(),
               const ProfileScreen(),
             ],
           );
@@ -233,6 +235,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.qr_code_scanner),
             label: 'Scan QR',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Analytics',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -272,6 +278,11 @@ class _HomeScreenState extends State<HomeScreen> {
               
               const SizedBox(height: 24),
               
+              // Dashboard Stats
+              _buildDashboardStats(user),
+              
+              const SizedBox(height: 24),
+              
               // Active Sessions (for students)
               if (user.isStudent) _buildActiveSessions(),
               
@@ -279,6 +290,11 @@ class _HomeScreenState extends State<HomeScreen> {
               
               // Statistics (for teachers/admins)
               if (user.isTeacher || user.isAdmin) _buildStatistics(),
+              
+              const SizedBox(height: 24),
+              
+              // Recent Activity
+              _buildRecentActivity(user),
             ],
           ),
         ),
@@ -437,6 +453,218 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDashboardStats(user) {
+    if (user.isStudent) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Your Stats',
+            style: AppTheme.titleLarge.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  title: 'Attendance',
+                  value: '85%',
+                  icon: Icons.check_circle,
+                  color: Colors.green,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  title: 'Present Days',
+                  value: '17',
+                  icon: Icons.event_available,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  title: 'Absent Days',
+                  value: '3',
+                  icon: Icons.event_busy,
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    } else if (user.isTeacher) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Class Statistics',
+            style: AppTheme.titleLarge.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  title: 'Total Students',
+                  value: '45',
+                  icon: Icons.people,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  title: 'Active Sessions',
+                  value: '3',
+                  icon: Icons.event,
+                  color: Colors.green,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  title: 'Avg Attendance',
+                  value: '78%',
+                  icon: Icons.analytics,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: AppTheme.headlineSmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: AppTheme.bodySmall.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentActivity(user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Recent Activity',
+          style: AppTheme.titleLarge.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildActivityItem(
+                  'Marked attendance for Mathematics',
+                  '2 hours ago',
+                  Icons.check_circle,
+                  Colors.green,
+                ),
+                const Divider(),
+                _buildActivityItem(
+                  'QR code scanned successfully',
+                  'Yesterday',
+                  Icons.qr_code_scanner,
+                  Colors.blue,
+                ),
+                const Divider(),
+                _buildActivityItem(
+                  'Attendance session started',
+                  '2 days ago',
+                  Icons.play_circle,
+                  Colors.orange,
+                ),
+                const Divider(),
+                _buildActivityItem(
+                  'Profile updated',
+                  '3 days ago',
+                  Icons.person,
+                  Colors.purple,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivityItem(String title, String time, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTheme.bodyMedium,
+                ),
+                Text(
+                  time,
+                  style: AppTheme.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -605,46 +833,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: AppTheme.headlineSmall.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: AppTheme.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 }

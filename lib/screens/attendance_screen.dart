@@ -62,27 +62,100 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (attendanceProvider.activeSessions.isEmpty) {
-      return _buildEmptyState();
-    }
-
     return RefreshIndicator(
       onRefresh: _loadActiveSessions,
-      child: ListView.builder(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        itemCount: attendanceProvider.activeSessions.length,
-        itemBuilder: (context, index) {
-          final session = attendanceProvider.activeSessions[index];
-          return _buildSessionCard(session, attendanceProvider);
-        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Section
+            _buildAttendanceHeader(),
+            
+            const SizedBox(height: 20),
+            
+            // Active Sessions
+            if (attendanceProvider.activeSessions.isNotEmpty) ...[
+              Text(
+                'Active Sessions',
+                style: AppTheme.titleLarge.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...attendanceProvider.activeSessions.map((session) => 
+                _buildSessionCard(session, attendanceProvider)
+              ).toList(),
+            ] else ...[
+              _buildEmptyState(),
+            ],
+            
+            const SizedBox(height: 20),
+            
+            // Attendance History
+            _buildAttendanceHistory(),
+            
+            const SizedBox(height: 20),
+            
+            // Quick Actions
+            _buildQuickActions(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttendanceHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.assignment,
+                color: Colors.white,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Attendance',
+                style: AppTheme.headlineSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Track your attendance and view records',
+            style: AppTheme.bodyLarge.copyWith(
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return Container(
+      padding: const EdgeInsets.all(32),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.event_available,
@@ -111,6 +184,166 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             label: const Text('Refresh'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAttendanceHistory() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Recent Attendance',
+          style: AppTheme.titleLarge.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildHistoryItem('Mathematics', 'Present', DateTime.now().subtract(const Duration(days: 1)), true),
+                const Divider(),
+                _buildHistoryItem('Physics', 'Present', DateTime.now().subtract(const Duration(days: 2)), true),
+                const Divider(),
+                _buildHistoryItem('Chemistry', 'Absent', DateTime.now().subtract(const Duration(days: 3)), false),
+                const Divider(),
+                _buildHistoryItem('English', 'Present', DateTime.now().subtract(const Duration(days: 4)), true),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHistoryItem(String subject, String status, DateTime date, bool isPresent) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: isPresent ? Colors.green : Colors.red,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                subject,
+                style: AppTheme.titleMedium,
+              ),
+              Text(
+                '${date.day}/${date.month}/${date.year}',
+                style: AppTheme.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isPresent ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            status,
+            style: AppTheme.labelSmall.copyWith(
+              color: isPresent ? Colors.green : Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Quick Actions',
+          style: AppTheme.titleLarge.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(
+                icon: Icons.qr_code_scanner,
+                title: 'Scan QR',
+                subtitle: 'Mark attendance',
+                onTap: () {
+                  // Navigate to QR scanner
+                  Navigator.pushNamed(context, '/qr-scanner');
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionCard(
+                icon: Icons.analytics,
+                title: 'Analytics',
+                subtitle: 'View statistics',
+                onTap: () {
+                  // Navigate to analytics
+                  Navigator.pushNamed(context, '/analytics');
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 32,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: AppTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: AppTheme.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
