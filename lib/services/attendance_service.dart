@@ -6,7 +6,7 @@ import 'auth_service.dart';
 import 'wifi_service.dart';
 import 'location_service.dart';
 import 'qr_service.dart';
-import 'offline_service.dart';
+// import 'offline_service.dart';  // Temporarily disabled for macOS build
 
 class AttendanceService {
   final Dio _dio;
@@ -14,7 +14,7 @@ class AttendanceService {
   final WifiService _wifiService;
   final LocationService _locationService;
   final QRService _qrService;
-  final OfflineService _offlineService;
+  // final OfflineService _offlineService;  // Temporarily disabled for macOS build
   final DeviceInfoPlugin _deviceInfo;
 
   AttendanceService(
@@ -23,7 +23,7 @@ class AttendanceService {
     this._wifiService,
     this._locationService,
     this._qrService,
-    this._offlineService,
+    // this._offlineService,  // Temporarily disabled for macOS build
     this._deviceInfo,
   );
 
@@ -93,11 +93,12 @@ class AttendanceService {
       );
 
       // Check if online
-      final isOnline = await _offlineService.isOnline();
+      // final isOnline = await _offlineService.isOnline();  // Temporarily disabled for macOS build
+      final isOnline = true;  // Assume online for macOS build
       
       if (!isOnline) {
         // Queue for offline processing
-        await _offlineService.queueAttendanceSubmission(attendanceData.toJson());
+        // await _offlineService.queueAttendanceSubmission(attendanceData.toJson());  // Temporarily disabled for macOS build
         return AttendanceSubmissionResult(
           success: true,
           message: 'Attendance queued for submission when online',
@@ -145,7 +146,7 @@ class AttendanceService {
           deviceInfo: await _getDeviceInfo(),
         );
         
-        await _offlineService.queueAttendanceSubmission(attendanceData.toJson());
+        // await _offlineService.queueAttendanceSubmission(attendanceData.toJson());  // Temporarily disabled for macOS build
         
         return AttendanceSubmissionResult(
           success: true,

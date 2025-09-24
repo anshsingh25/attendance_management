@@ -4,14 +4,14 @@ import '../services/attendance_service.dart';
 import '../services/wifi_service.dart';
 import '../services/location_service.dart';
 import '../services/qr_service.dart';
-import '../services/notification_service.dart';
+// import '../services/notification_service.dart';  // Temporarily disabled for macOS build
 
 class AttendanceProvider with ChangeNotifier {
   final AttendanceService _attendanceService;
   final WifiService _wifiService;
   final LocationService _locationService;
   final QRService _qrService;
-  final NotificationService _notificationService;
+  // final NotificationService _notificationService;  // Temporarily disabled for macOS build
 
   List<AttendanceSession> _activeSessions = [];
   AttendanceSession? _currentSession;
@@ -26,7 +26,7 @@ class AttendanceProvider with ChangeNotifier {
     this._wifiService,
     this._locationService,
     this._qrService,
-    this._notificationService,
+    // this._notificationService,  // Temporarily disabled for macOS build
   );
 
   // Getters
@@ -86,7 +86,7 @@ class AttendanceProvider with ChangeNotifier {
         _submissionSuccess = result.message ?? 'Attendance submitted successfully';
         
         // Show success notification
-        await _notificationService.showAttendanceSuccess(
+        // await _notificationService.showAttendanceSuccess(  // Temporarily disabled for macOS build
           title: 'Attendance Submitted',
           body: _submissionSuccess!,
         );
@@ -101,7 +101,7 @@ class AttendanceProvider with ChangeNotifier {
         _submissionError = result.error ?? 'Failed to submit attendance';
         
         // Show error notification
-        await _notificationService.showAttendanceError(
+        // await _notificationService.showAttendanceError(  // Temporarily disabled for macOS build
           title: 'Attendance Failed',
           body: _submissionError!,
         );
@@ -112,7 +112,7 @@ class AttendanceProvider with ChangeNotifier {
       _submissionError = e.toString();
       
       // Show error notification
-      await _notificationService.showAttendanceError(
+      // await _notificationService.showAttendanceError(  // Temporarily disabled for macOS build
         title: 'Attendance Error',
         body: _submissionError!,
       );
@@ -225,7 +225,7 @@ class AttendanceProvider with ChangeNotifier {
           );
 
           if (result.success) {
-            await _notificationService.showAttendanceSuccess(
+            // await _notificationService.showAttendanceSuccess(  // Temporarily disabled for macOS build
               title: 'Attendance Auto-Marked',
               body: 'You are connected to classroom WiFi. Attendance marked.',
             );

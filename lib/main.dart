@@ -68,7 +68,7 @@ class AttendanceApp extends StatelessWidget {
       create: (context) => AuthProvider(),
       child: MaterialApp(
         title: 'Attendance Manager',
-      theme: ThemeData(
+        theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
         ),
@@ -446,7 +446,7 @@ class StudentDashboardScreen extends StatelessWidget {
         builder: (context, authProvider, child) {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-        child: Column(
+            child: Column(
               children: [
                 // Welcome Card
                 Card(
@@ -767,8 +767,8 @@ class StudentDashboardScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
-          children: [
-            Icon(
+        children: [
+          Icon(
               Icons.wifi,
               color: Colors.green,
             ),
@@ -884,7 +884,7 @@ class TeacherDashboardScreen extends StatelessWidget {
                         Icon(
                           Icons.person,
                           size: 60,
-                          color: Theme.of(context).colorScheme.primary,
+            color: Theme.of(context).colorScheme.primary,
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -956,9 +956,9 @@ class TeacherDashboardScreen extends StatelessWidget {
                                   foregroundColor: Colors.white,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
+          ),
+          const SizedBox(width: 12),
+          Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () => _navigateToClasses(context),
                                 icon: const Icon(Icons.class_),
@@ -1021,9 +1021,9 @@ class TeacherDashboardScreen extends StatelessWidget {
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                         Text(
                           'Class Statistics',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -1581,9 +1581,9 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                 color: color,
               ),
             ),
-            Text(
-              title,
-              style: const TextStyle(
+                Text(
+                  title,
+                  style: const TextStyle(
                 fontSize: 12,
                 color: Colors.grey,
               ),
@@ -2471,13 +2471,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         ),
                         Text(
                           'Filter: $_selectedFilter',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
                     const SizedBox(height: 16),
                     if (filteredRecords.isEmpty)
                       const Center(
