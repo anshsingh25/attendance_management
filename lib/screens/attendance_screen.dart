@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/attendance_provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_theme.dart';
+import 'teacher_dashboard_screen.dart';
 
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
@@ -48,7 +49,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           if (authProvider.isStudent) {
             return _buildStudentView(attendanceProvider);
           } else if (authProvider.isTeacher) {
-            return _buildTeacherView();
+            return const TeacherDashboardScreen();
           } else {
             return _buildAdminView();
           }
